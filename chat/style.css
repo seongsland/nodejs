@@ -1,0 +1,121 @@
+* {
+	font-size:12px;
+}
+input {
+	border:1px solid #555; 
+}
+input.textInput {
+	background-color:#ccc;
+}
+.frame {
+	width:500px;
+	height:500px;
+	background-color:#eee;
+	text-align:center;
+}
+.title {
+	height:25px;
+	padding:10px;
+	font-family:"돋움";
+	font-size:16px;
+	font-weight:bold;
+	background-color:#bbb;
+}
+.title #title1 {
+	float:left;
+	height:30px;
+	width:430px;
+	margin:0px;
+	padding:0px;
+	vertical-align:middle;
+}
+.title #title2 {
+	float:left;
+	height:30px;
+	width:30px;
+	margin:0px;
+	padding:0px;
+	vertical-align:middle;
+}
+.viewPort {
+	width:500px;
+	height:500px;
+	overflow-y:auto;
+	display:none;
+	
+	scrollbar-face-color: #F6F6F6; 
+	scrollbar-highlight-color: #bbbbbb; 
+	scrollbar-3dlight-color: #FFFFFF; 
+	scrollbar-shadow-color: #bbbbbb; 
+	scrollbar-darkshadow-color: #FFFFFF; 
+	scrollbar-track-color: #f5f5f5; 
+	scrollbar-arrow-color: #bbbbbb;
+}
+.viewPort .bodyTable {
+	width:470px;
+	text-align:left;
+	margin-top:20px;
+	padding:5px;
+	border:1px solid #555; 
+}
+.viewPort .bodyTable td {
+	height:25px;
+}
+.viewPort .bodyTable .head td {
+	border-bottom:1px solid #555; 
+	text-align:center;
+}
+.center {
+	text-align:center;
+}
+.red {
+	color:red;
+}
+.blue {
+	color:blue;
+}
+#data_recieved tr td.first {
+	width:50px;
+	font-weight:bold;
+}
+
+#chatBody {
+	height:450px;
+	overflow-y:scroll;
+	
+	scrollbar-face-color: #F6F6F6; 
+	scrollbar-highlight-color: #bbbbbb; 
+	scrollbar-3dlight-color: #FFFFFF; 
+	scrollbar-shadow-color: #bbbbbb; 
+	scrollbar-darkshadow-color: #FFFFFF; 
+	scrollbar-track-color: #f5f5f5; 
+	scrollbar-arrow-color: #bbbbbb;
+}
+#chatInput {
+	width:480px;
+	border:1px solid #555; 
+}
+#chatInput #nickView {
+	width:70px; 
+	display:inline;
+	text-align:left;
+}
+#message {
+	width:360px;
+}
+
+.pointer {
+	cursor:pointer;
+}
+
+.popMenu {
+	display:none;
+	position:absolute;
+}
+
+.idclick {
+	cursor:pointer;
+}
+.cmclick {
+	cursor:pointer;
+}
