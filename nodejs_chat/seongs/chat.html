@@ -1,0 +1,247 @@
+﻿<html>
+   <head>
+		<link type="text/css" href="/css" rel="stylesheet" />
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript" src="/jquery"></script>
+		<script type="text/javascript">
+			function viewobj(obj) {
+				var res;
+				for(var d in obj) {
+					res	+= d + ":" + obj.get(d) + ",";
+				} 
+				return res;
+			}
+			var nick 	= '';
+			var socket 	= io.connect('/');
+			 
+			//---- 시작과 끝 처리
+			$(document).ready(function(){
+				viewDiv(1);
+				$(".idclick").live("click", function() {
+					clickAutoWrite("/to:" + $(this).text() + " ");
+				});
+				$(".cmclick").live("click", function() {
+					clickAutoWrite($(this).text());
+				});
+			});
+			
+			$(window).bind("beforeunload", function() {
+				socket.emit('leave', nick);
+			});
+			
+			
+			//---- 서버 요청에 대한 처리
+			socket.on('registNick', function (nick) {
+				socket.emit('roomList');
+			});
+			
+			socket.on('reqChangeNick', function (reqNick) {
+				socket.emit('changeNick', reqNick);
+				nick	= reqNick;
+				$("#nickView").html(nick);
+			});
+			
+			socket.on('changeNick', function (nick) {
+				$("#data_recieved").append("<tr><td class='first'></td><td class='red'>" + nick.before + " 님의 대화명이 <span class='idclick'>" + nick.after + "</span>로 변경되었습니다.</td></tr>");
+				scrollMove();
+			});
+			
+			socket.on('roomList', function (data) {
+				for(var room in data) {
+					var roomInfo	= data[room];
+					var userList	= getUserList(roomInfo.userList);
+					$("#roomList").append("<tr><td>" + roomInfo.name + "</td><td class='center' title='" + userList + "'>" + roomInfo.userCount + "</td><td class='center'>" + roomInfo.createDate + "</td><td class='center'><input type='button' value='입장' onclick='joinRoom(\"" + room + "\");'></td></tr>");
+				}
+				if(!$("#roomList tr[class!=head]").html()) {
+					$("#roomList").append("<tr><td colspan='4' class='center'>현재 등록된 방이 없습니다.</td></tr>");
+				}
+			});
+			
+			socket.on('createRoom', function (data) {
+				$(".title").html(data.roomInfo.name + " <span class='pointer' onclick='leave();'>[X]</span>");
+				$("#data_recieved").append("<tr><td class='first'></td><td class='red'><span class='idclick'>" + data.nick + "</span> 님이 입장하셨습니다. " + getNow() + "</td></tr>");
+				scrollMove();
+			});
+			
+			socket.on('joinRoom', function (data) {
+				if(data.roomInfo) {
+					$(".title").html(data.roomInfo.name + " <span class='pointer' onclick='leave();'>[X]</span>");
+					$("#data_recieved").append("<tr><td class='first'></td><td class='red'><span class='idclick'>" + data.nick + "</span> 님이 입장하셨습니다. " + getNow() + "</td></tr>");
+					scrollMove();
+				} else {
+					alert('존재하지 않는 대화방 입니다.');
+					viewDiv(2);
+					roomList();
+				}
+			});
+
+			socket.on('message', function (data) {
+				if(data.type == 0) {		// 일반
+					$("#data_recieved").append("<tr><td class='first'><span class='idclick'>" + data.nick + "</span></td><td>" + data.msg + " " + getNow() + "</td></tr>");
+				} else if(data.type == 1) {	// 시스템
+					$("#data_recieved").append("<tr><td class='first'></td><td class='red'>" + data.msg + " " + getNow() + "</td></tr>");
+				} else if(data.type == 2) {	// 귓속말
+					$("#data_recieved").append("<tr><td class='first blue'><span class='idclick'>" + data.nick + "</span></td><td class='blue'>" + data.msg + " " + getNow() + "</td></tr>");
+				}
+				scrollMove();
+			});
+			
+			socket.on('leave', function (nick) {
+				$("#data_recieved").append("<tr><td class='first'></td><td class='red'><span class='idclick'>" + nick + "</span> 님이 퇴장하셨습니다. " + getNow() + "</td></tr>");
+				scrollMove();
+			});
+			
+			function omok(rand) {
+				var url	= 'http://103.22.253.233:12346/' + rand;
+				window.open(url, '', 'width=600, height=600, scrollbars=no');
+			}
+			
+			//---- 클라이언트 처리
+			function registNick() {
+				nick	= $("#nick").val();
+				if(!nick) {
+					alert('대화명을 입력하세요.');
+				} else {
+					nick	= replaceHtml(nick);
+					socket.emit('registNick', nick);
+					viewDiv(2);
+					alert(nick + "님 반갑습니다.");
+				}
+			}
+			
+			function roomList() {
+				$("#roomList tr[class!=head]").remove();
+				socket.emit('roomList');
+			}
+			
+			function createRoom() {
+				var roomName	= $("#roomName").val();
+				if(!roomName) {
+					alert("대화방명을 입력하세요.");
+				} else {
+					roomName	= replaceHtml(roomName);
+					socket.emit('createRoom', roomName);
+					$("#nickView").html(nick);
+					viewDiv(3);
+					$("#data_recieved").append("<tr><td class='first'></td><td>채팅방 기능은 <span class='red cmclick'>/help</span> 라고 쳐주세요.</td></tr>");
+				}
+			}
+			
+			function joinRoom(i) {
+				socket.emit('joinRoom', i);
+				$("#nickView").html(nick);
+				viewDiv(3);
+				$("#data_recieved").append("<tr><td class='first'></td><td>채팅방 기능은 <span class='red cmclick'>/help</span> 라고 쳐주세요.</td></tr>");
+			}
+			
+			function message() {
+				var message			= $("#message").val();
+				$("#message").val('');
+				$("#message").focus();
+				if(!message) {
+					alert("내용을 입력하세요.");
+				} else {
+					message	= replaceHtml(message);
+					socket.emit('message', message);
+				}
+			}
+			
+			function leave() {
+				if(confirm("대화방을 나가시겠습니까?")) {
+					socket.emit('leave', nick);
+					viewDiv(2);
+				}
+			}
+			
+			function getNow() {
+				var dates	= new Date();
+				return ("(" + make2Length(dates.getHours()) + ":" + make2Length(dates.getUTCMinutes()) + ")");
+			}
+			
+			function make2Length(val) {
+				return (val<=9) ? "0" + val : val;
+			}
+			
+			function scrollMove() {
+				var scrollObj	= $("#chatBody");
+				scrollObj.scrollTop($("#data_recieved").height()+500);
+				document.focus();
+			}
+			 
+			function viewDiv(num) {
+				$(".viewPort").css("display", "none");
+				$("#idx" + num).css("display", "block");
+				if(num == 1) {
+					$(".title").html("비상대비 사업단 대화 시스템");
+					$("#nick").focus();
+				} else if(num == 2) {
+					$(".title").html("비상대비 사업단 대화방 목록");
+					$("#data_recieved").html('');
+					$("#roomName").focus();
+				} else if(num == 3) {
+					$("#message").focus();
+				}
+			}
+			
+			function enterEvent(func) {
+				if(event.keyCode == '13') {
+					eval(func + "()");
+				}
+			}
+			
+			function getUserList(userList) {
+				var res	= "";
+				for(var key in userList) {
+					res	+= "," + userList[key];
+				}
+				return res.substring(1);
+			}
+			
+			function clickAutoWrite(val) {
+				$("#message").focus();
+				$("#message").val(val);
+			}
+			
+			function replaceHtml(val) {
+				return val.replace("<", "&lt");
+			}
+		</script>
+	</head>
+	<body>
+		<div class="frame">
+			<div class="title"></div>
+			<div id="idx1" class="viewPort">
+				<br/><br/>
+				대화명을 입력해 주세요. <br/><br/>
+				<input type="text" id="nick" class="textInput" onKeyPress="enterEvent('registNick');" maxlength="10">
+				<input type="button" value="입력" onclick="registNick()">
+			</div>
+			<div id="idx2" class="viewPort">
+				<br/>
+				새로운 대화방 : <input type="text" id="roomName" class="textInput" onKeyPress="enterEvent('createRoom');" size="20" maxlength="20">
+				<input type="button" value="생성" onclick="createRoom()">
+				<input type="button" value="새로고침" onclick="roomList()">
+				<table id="roomList" class="bodyTable">
+					<tr class="head">
+						<td>대화방명</td>
+						<td>참여인원</td>
+						<td>생성일</td>
+						<td>입장</td>
+					</tr>
+				</table>
+			</div>
+			<div id="idx3" class="viewPort">
+				<div id="chatBody">
+					<table id="data_recieved" class="bodyTable">
+					</table>
+				</div>
+				<br />
+				<div id="chatInput">
+					<div id="nickView"></div>
+					<input type="text" id="message" class="textInput" onKeyPress="enterEvent('message');"/>
+					<input type="button" value="입력" onclick="message()">
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
