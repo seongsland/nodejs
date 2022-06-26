@@ -36,7 +36,7 @@
 						alert('이 위치에는 놓을수 없습니다.');
 					} else {
 						socket.emit('clicks', {types:types, i:i, j:j});
-					}					
+					}
 				}
 			}
 			
@@ -47,7 +47,7 @@
 			
 			socket.on('setTypes', function (this_types) {
 				types	= this_types;
-				alert(this_types + " 로 설정되었습니다.");
+				alert(this_types + " 으로 설정되었습니다.");
 			});
 			
 			socket.on('startGame', function (this_types) {
@@ -63,7 +63,8 @@
 				$("#cl_" + obj.i + "_" + obj.j).addClass("last_cl");
 				if(checkClick(obj)) {
 					alert(obj.types + '가 승리하였습니다.');
-					self.close();
+                    flag    = false;
+                    return false;
 				}
 				if(types == obj.types) {
 					flag	= false;
@@ -72,16 +73,9 @@
 				}
 			});
 			
-			socket.on('refresh', function (msg) {
-				if(msg == 'full') {
-					alert('이미 정원이 초과되었습니다. 다른 방으로 이동합니다.');
-				}
-				location.replace('/');
-			});
-			
 			socket.on('gameend', function (msg) {
 				alert('게임이 종료되었습니다.');
-				self.close();
+                flag    = false;
 			});
 			
 			function checkClick(obj) {

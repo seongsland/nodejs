@@ -1,11 +1,10 @@
 // setup
 var port		= 12345;
-var logLevel	= 2;
 
 // lib load
 var http 		= require('http');
 var fs			= require('fs');
-var socketio	= require('socket.io');
+var socketio	= require('socket.io')(http);
 
 // global var
 var roomInfo	= {};
@@ -35,7 +34,6 @@ var server 		= http.createServer(function(request, response) {
 
 // socket io
 var io 			= socketio.listen(server);
-io.set("log level", logLevel);
 
 io.sockets.on('connection', function (socket) {
 
@@ -46,71 +44,54 @@ io.sockets.on('connection', function (socket) {
 	
 	// 닉 등록
 	socket.on('registNick', function (name) {
-		socket.set('nick', name);
+		socket.nick    = name;
 		socket.emit('registNick', name);
 	});
 	
 	// 닉 변경
 	socket.on('changeNick', function (name) {
-		var room,nick;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
-		socket.get('nick', function (err, nickf) {
-			nick	= nickf;
-		});
+		var room    = socket.room;
+        var nick    = socket.nick;
 		
-		socket.set('nick', name);
+		socket.nick    = name;
 		changeUser(room, socket.id, name);
-		io.sockets.in(room).emit('changeNick', {before:nick, after:name});
+		io.to(room).emit('changeNick', {before:nick, after:name});
 	});
 	
 	// 입장
 	socket.on('joinRoom', function (room) {
-		var nick;
-		socket.get('nick', function (err, nickf) {
-			nick	= nickf;
-		});
-		
+		var nick    = socket.nick;
+        
 		socket.join(room);
 		addUser(room, socket.id, nick);
-		socket.set('room', room);
-		io.sockets.in(room).emit('joinRoom', {nick:nick, roomInfo:roomList[room]});
+		socket.room    = room;
+		io.to(room).emit('joinRoom', {nick:nick, roomInfo:roomList[room]});
 	});
 	
 	// 생성
 	socket.on('createRoom', function (roomName) {
-		var nick;
-		socket.get('nick', function (err, nickf) {
-			nick	= nickf;
-		});
+		var nick    = socket.nick;
 		
 		roomNumber++;
 		var room	= "" + roomNumber;
 		socket.join(room);
 		roomList[room]	= {name:roomName, createDate:getNow(), state:1, userCount:0, owner:socket.id, userList:{}};
 		addUser(room, socket.id, nick);
-		socket.set('room', room);
-		io.sockets.in(room).emit('createRoom', {nick:nick, roomInfo:roomList[room]});
+		socket.room    = room;
+		io.to(room).emit('createRoom', {nick:nick, roomInfo:roomList[room]});
 	});
 	
 	// 대화
 	socket.on('message', function (data) {
-		var room,nick;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
-		
-		socket.get('nick', function (err, nickf) {
-			nick	= nickf;
-		});
-	  
+		var room    = socket.room;
+        var nick    = socket.nick;
+
 		// message에 대한 분기처리
 		var msg	= getMsgType(data);
 		
 		if(msg.type == 0) {
 			// 평문 대화
-			io.sockets.in(room).emit('message', {
+            io.to(room).emit('message', {
 				type : 0,
 				nick : nick,
 				msg : msg.msg
@@ -125,7 +106,7 @@ io.sockets.on('connection', function (socket) {
 		} else if(msg.type == 2) {
 			// 귓속말 처리
 			var socketid	= getSocketId(room, msg.target);
-			console.info("socketid:" + socketid);
+
 			if(!socketid) {
 				socket.emit('message', {
 					type : 1,
@@ -137,8 +118,8 @@ io.sockets.on('connection', function (socket) {
 					var rand	= parseInt(Math.random()*100000);
 					msg.msg		= "<input type='button' value='오목하기' onclick='omok(" + rand + ");'>";
 				}
-				
-				io.sockets.sockets[socketid].emit('message', {
+
+				io.to(socketid).emit('message', {
 					type : 2,
 					nick : nick,
 					msg : msg.msg
@@ -187,15 +168,9 @@ io.sockets.on('connection', function (socket) {
 	
 	// 방나가기
 	socket.on('leave', function (nick) {
-		var room,nick;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
-		
-		socket.get('nick', function (err, nickf) {
-			nick	= nickf;
-		});
-		
+        var room    = socket.room;
+        var nick    = socket.nick;
+        
 		if(room) {
 			socket.broadcast.to(room).emit('leave', nick);
 			socket.leave(room);
@@ -205,10 +180,7 @@ io.sockets.on('connection', function (socket) {
 	
 	// disconnect 처리
 	socket.on('disconnect', function (nick) {
-		var room;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
+		var room    = socket.room;
 		removeUser(room, socket.id);
 	});
 });

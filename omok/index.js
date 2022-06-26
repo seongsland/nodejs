@@ -1,15 +1,12 @@
 // setup
 var port		= 12346;
-var logLevel	= 2;
 
 // lib load
 var http 		= require('http');
 var fs			= require('fs');
-var socketio	= require('socket.io');
+var socketio	= require('socket.io')(http);
 
 // global var
-var roomInfo	= {};
-var roomNumber	= -1;
 var roomList	= {};
 
 // http
@@ -40,7 +37,6 @@ var server 		= http.createServer(function(request, response) {
 
 // socket io
 var io 			= socketio.listen(server);
-io.set("log level", logLevel);
 
 io.sockets.on('connection', function (socket) {
 
@@ -48,16 +44,18 @@ io.sockets.on('connection', function (socket) {
 	socket.on('joinRoom', function (room) {
 		socket.join(room);
 		if(roomList[room]) {
-			roomList[room].userCount++;
-			if(roomList[room].types == '●') {
-				roomList[room].types	= '○';
-			} else {
-				roomList[room].types		= '●'			
-			}
+            if(roomList[room].userCount > 1) {
+                roomList[room].types = '구경꾼';
+            } else {
+                roomList[room].types = '●'
+            }
 		} else {
-			roomList[room]	= {userCount:1, types:'○'};
+			roomList[room]	= {userCount:0, types:'○', history:[]};
 		}
-		socket.set('room', room);
+        roomList[room].userCount++;
+        
+		socket.room     = room;
+        socket.types    = roomList[room].types;
 		socket.emit('setTypes', roomList[room].types);
 		
 		if(roomList[room].userCount == 2) {
@@ -65,37 +63,36 @@ io.sockets.on('connection', function (socket) {
 			if(Math.random() > 0.5) {
 				roomList[room].types	= '○';
 			}
-			io.sockets.in(room).emit('startGame', roomList[room].types);
+			io.to(room).emit('startGame', roomList[room].types);
 		}
-		
-		if(roomList[room].userCount > 2) {
-			socket.emit('refresh', 'full');
-		}
+        
+        if(roomList[room].types == "구경꾼") {
+            for(var history of roomList[room].history) {
+                socket.emit('clicks', history);
+            }
+        }
 	});
 	
 	// 클릭
 	socket.on('clicks', function (obj) {
-		var room;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
-		io.sockets.in(room).emit('clicks', obj);
+		var room    = socket.room;
+        var types   = socket.types;
+        if(types == "○" || types == "●") {
+            roomList[room].history.push(obj);
+		    io.to(room).emit('clicks', obj);
+        }
 	});
 	
 	
 	// 방나가기
 	socket.on('leave', function () {
-		var room;
-		socket.get('room', function (err, roomf) {
-			room	= roomf;
-		});
+		var room    = socket.room;
 		
 		removeUser(room, socket.id);
-		io.sockets.in(room).emit('gameend');
+		io.to(room).emit('gameend');
 	});
 	
 });
-
 
 
 // 공통 function
