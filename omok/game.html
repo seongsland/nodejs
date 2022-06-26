@@ -1,5 +1,6 @@
 ﻿<html>
    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 		<link type="text/css" href="/css" rel="stylesheet" />
 		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
 		<script type="text/javascript" src="/jquery"></script>
@@ -48,6 +49,9 @@
 			socket.on('setTypes', function (this_types) {
 				types	= this_types;
 				alert(this_types + " 으로 설정되었습니다.");
+                if(types == "구경꾼") {
+                    flag    = false;
+                }
 			});
 			
 			socket.on('startGame', function (this_types) {
@@ -66,7 +70,7 @@
                     flag    = false;
                     return false;
 				}
-				if(types == obj.types) {
+				if(types == obj.types || types == "구경꾼") {
 					flag	= false;
 				} else {
 					flag	= true;
