@@ -1,7 +1,143 @@
 ﻿<html>
    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+		<link type="text/css" href="/css" rel="stylesheet" />
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript" src="/jquery"></script>
 		<script type="text/javascript">
-			location.replace('./' + parseInt(Math.random()*10000));
+			var types 	= '';
+			var socket 	= io.connect('/');
+			var room	= "";
+			var flag	= false;
+			 
+			//---- 시작과 끝 처리
+			$(document).ready(function(){
+				var htmls	= "";
+				for(var i=0; i<20; i++) {
+					htmls	+= "<tr>";
+					for(var j=0; j<20; j++) {
+						htmls	+= "<td class='pointer' onclick='clicks(" + i + "," + j + ");' id='cl_" + i + "_" + j + "'>&nbsp;</td>";
+					}
+					htmls	+= "</tr>";
+				}
+				$("#board5").html(htmls);
+				
+				var url		= location.href;
+				room		= url.substring(url.lastIndexOf("/") + 1, url.length);
+				socket.emit('joinRoom', room);
+			});
+			
+			$(window).bind("beforeunload", function() {
+				socket.emit('leave');
+			});
+			
+			function clicks(i,j) {
+				if(flag) {
+					if($("#cl_" + i + "_" + j).html() != "&nbsp;") {
+						alert('이 위치에는 놓을수 없습니다.');
+					} else {
+						socket.emit('clicks', {types:types, i:i, j:j});
+					}
+				}
+			}
+			
+			//---- 서버 요청에 대한 처리
+			socket.on('message', function (msg) {
+				alert(msg);
+			});
+			
+			socket.on('setTypes', function (this_types) {
+				types	= this_types;
+				alert(this_types + " 으로 설정되었습니다.");
+                if(types == "구경꾼") {
+                    flag    = false;
+                }
+			});
+			
+			socket.on('startGame', function (this_types) {
+				alert("게임을 시작합니다. " + this_types + "차례 입니다.");
+				if(types == this_types) {
+					flag	= true;
+				}
+			});
+			
+			socket.on('clicks', function (obj) {
+				$("#cl_" + obj.i + "_" + obj.j).text(obj.types);
+				$("td").removeClass("last_cl");
+				$("#cl_" + obj.i + "_" + obj.j).addClass("last_cl");
+				if(checkClick(obj)) {
+					alert(obj.types + '가 승리하였습니다.');
+                    flag    = false;
+                    return false;
+				}
+				if(types == obj.types || types == "구경꾼") {
+					flag	= false;
+				} else {
+					flag	= true;
+				}
+			});
+			
+			socket.on('gameend', function (msg) {
+				alert('게임이 종료되었습니다.');
+                flag    = false;
+			});
+			
+			function checkClick(obj) {
+				var totalStat	= false;
+				var tmpCnt1		= 0;
+				var tmpCnt2		= 0;
+				var tmpCnt3		= 0;
+				var tmpCnt4		= 0;
+				for(var i=-5; i<6; i++) {
+					var cl1	= $("#cl_" + (obj.i+i) + "_" + (obj.j)).text();
+					var cl2	= $("#cl_" + (obj.i) + "_" + (obj.j+i)).text();
+					var cl3	= $("#cl_" + (obj.i+i) + "_" + (obj.j+i)).text();
+					var cl4	= $("#cl_" + (obj.i-i) + "_" + (obj.j+i)).text();
+					
+					if(cl1 == obj.types) {
+						tmpCnt1++;
+					} else {
+						if(tmpCnt1 < 5) {
+							tmpCnt1	= 0;
+						}
+					}
+					
+					if(cl2 == obj.types) {
+						tmpCnt2++;
+					} else {
+						if(tmpCnt2 < 5) {
+							tmpCnt2	= 0;
+						}
+					}
+					
+					if(cl3 == obj.types) {
+						tmpCnt3++;
+					} else {
+						if(tmpCnt3 < 5) {
+							tmpCnt3	= 0;
+						}
+					}
+					
+					if(cl4 == obj.types) {
+						tmpCnt4++;
+					} else {
+						if(tmpCnt4 < 5) {
+							tmpCnt4	= 0;
+						}
+					}
+				}
+				
+				if(tmpCnt1 == 5 || tmpCnt2 == 5 || tmpCnt3 == 5 || tmpCnt4 == 5) {
+					return true;
+				}
+				
+				return false;
+			}
+			
 		</script>
 	</head>
+	<body>
+		<table id="board5">
+		</table>				
+	</body>
 </html>

@@ -115,8 +115,7 @@ io.sockets.on('connection', function (socket) {
 				});
 			} else {
 				if(msg.msg.trim() == "omok!") {
-					var rand	= parseInt(Math.random()*100000);
-					msg.msg		= "<input type='button' value='오목하기' onclick='omok(" + rand + ");'>";
+					msg.msg		= "<input type='button' value='오목하기' onclick='omok();'>";
 				}
 
 				io.to(socketid).emit('message', {

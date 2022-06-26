@@ -1,1 +1,1 @@
-node omok/index.js &
+nohup node omok/index.js &

@@ -8,16 +8,12 @@ var socketio	= require('socket.io')(http);
 
 // global var
 var roomList	= {};
+var lastRoom    = "";
 
 // http
 var server 		= http.createServer(function(request, response) {
 	var url	= request.url;
-	if(url == "/") {
-		fs.readFile(__dirname + '/index.html', function(error, data) {
-			response.writeHead(200, {'Content-Type' : 'text/html'});
-			response.end(data);
-		});
-	} else if(url == "/jquery") {
+	if(url == "/jquery") {
 		fs.readFile(__dirname + '/jquery-1.5.1.min.js', function(error, data) {
 			response.writeHead(200, {'Content-Type' : 'text/html'});
 			response.end(data);
@@ -27,12 +23,17 @@ var server 		= http.createServer(function(request, response) {
 			response.writeHead(200, {'Content-Type' : 'text/html'});
 			response.end(data);
 		});
-	} else {
-		fs.readFile(__dirname + '/game.html', function(error, data) {
+	} else if(url == "/r") {
+		fs.readFile(__dirname + '/r.html', function(error, data) {
 			response.writeHead(200, {'Content-Type' : 'text/html'});
 			response.end(data);
 		});
-	}
+	} else {
+        fs.readFile(__dirname + '/index.html', function(error, data) {
+			response.writeHead(200, {'Content-Type' : 'text/html'});
+			response.end(data);
+		});
+    }
 }).listen(port);
 
 // socket io
@@ -42,6 +43,15 @@ io.sockets.on('connection', function (socket) {
 
 	// 입장
 	socket.on('joinRoom', function (room) {
+        if(!room) {
+            if(!lastRoom) {
+                room    = "1";
+            } else {
+                room    = lastRoom;
+            }
+        }
+        lastRoom    = room;
+        
 		socket.join(room);
 		if(roomList[room]) {
             if(roomList[room].userCount > 1) {
