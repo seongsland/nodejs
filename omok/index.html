@@ -27,10 +27,6 @@
 				socket.emit('joinRoom', room);
 			});
 			
-			$(window).bind("beforeunload", function() {
-				socket.emit('leave');
-			});
-			
 			function clicks(i,j) {
 				if(flag) {
 					if($("#cl_" + i + "_" + j).html() != "&nbsp;") {
@@ -66,6 +62,7 @@
 				$("td").removeClass("last_cl");
 				$("#cl_" + obj.i + "_" + obj.j).addClass("last_cl");
 				if(checkClick(obj)) {
+                    socket.emit('endGame');
 					alert(obj.types + '가 승리하였습니다.');
                     flag    = false;
                     return false;
@@ -75,11 +72,6 @@
 				} else {
 					flag	= true;
 				}
-			});
-			
-			socket.on('gameend', function (msg) {
-				alert('게임이 종료되었습니다.');
-                flag    = false;
 			});
 			
 			function checkClick(obj) {

@@ -212,20 +212,14 @@ function removeUser(room, socketid) {
 	try {
 		if(roomList[room]) {
 			delete roomList[room].userList[socketid];
-			roomList[room].userCount	= getSize(roomList[room].userList);
-			if(roomList[room].userCount < 1) {
+			roomList[room].userCount--;
+			if(roomList[room].userCount == 0) {
 				delete roomList[room];
 			}
 		}
 	} catch(e) {
 		console.info(e);
 	}
-}
-
-function getSize(obj) {
-	var size	= 0;
-	for(var v in obj) size++;
-	return size;
 }
 
 function getNow() {

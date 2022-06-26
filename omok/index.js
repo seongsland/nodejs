@@ -45,7 +45,7 @@ io.sockets.on('connection', function (socket) {
 	socket.on('joinRoom', function (room) {
         if(!room) {
             if(!lastRoom) {
-                room    = "1";
+                room    = Math.random() * 10000;
             } else {
                 room    = lastRoom;
             }
@@ -60,7 +60,8 @@ io.sockets.on('connection', function (socket) {
                 roomList[room].types = '●'
             }
 		} else {
-			roomList[room]	= {userCount:0, types:'○', history:[]};
+			roomList[room]	= {userCount:0, types:'○', userList:[], history:[]};
+            console.info("roomListCount : " + Object.keys(roomList).length);
 		}
         roomList[room].userCount++;
         
@@ -92,16 +93,14 @@ io.sockets.on('connection', function (socket) {
 		    io.to(room).emit('clicks', obj);
         }
 	});
-	
-	
-	// 방나가기
-	socket.on('leave', function () {
-		var room    = socket.room;
-		
-		removeUser(room, socket.id);
-		io.to(room).emit('gameend');
+    
+    // 게임 종료
+    socket.on('endGame', function (obj) {
+        lastRoom    = "";
+        if(typeof roomList[socket.room] != "undefined") {
+            delete roomList[socket.room];
+        }
 	});
-	
 });
 
 
@@ -111,20 +110,6 @@ function addUser(room, socketid, nick) {
 		if(roomList[room]) {
 			roomList[room].userCount++;
 			roomList[room].userList[socketid] = nick;
-		}
-	} catch(e) {
-		console.info(e);
-	}
-}
-
-function removeUser(room, socketid) {
-	try {
-		if(roomList[room]) {
-			delete roomList[room].userList[socketid];
-			roomList[room].userCount	= getSize(roomList[room].userList);
-			if(roomList[room].userCount < 1) {
-				delete roomList[room];
-			}
 		}
 	} catch(e) {
 		console.info(e);
